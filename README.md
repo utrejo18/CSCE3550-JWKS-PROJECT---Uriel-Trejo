@@ -44,9 +44,11 @@ curl -X POST "http://localhost:8080/auth?expired=true"
 ```
 
 To run the tests:
+```bash
 cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
+```
 
 To check coverage:
 First install "gcovr" if it is not already installed:
