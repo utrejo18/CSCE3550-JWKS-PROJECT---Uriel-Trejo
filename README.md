@@ -40,7 +40,7 @@ Input this:
 The server should say that it is running on port 8080. Just leave that terminal
 open because closing it stops the server. To quit: ctrl + c
 
-You can open another terminal window to run these: 
+#### Open another terminal window to run these below: 
 ```bash
 curl http://localhost:8080/.well-known/jwks.json
 curl -X POST http://localhost:8080/auth
