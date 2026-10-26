@@ -1,7 +1,7 @@
 # JWKS PROJECT
 ## Made by Uriel Trejo uht0001
 
-#### UPDATES: For project 2, I added SQLite so the private keys are saved in a database instead of only being kept in memory.
+#### UPDATES: For project 2, I added SQLite so the private keys are saved in a database instead of only being kept in memory. Updates were made to KeyManager.h, KeyManager.cpp, and JwtService.cpp to implemet SQLite
 
 This project is a small HTTP server I made in C++. It creates RSA keys, shows
 the public key in JWKS format, and creates signed JWTs. OpenSSL is used for the
