@@ -47,6 +47,11 @@ curl -X POST http://localhost:8080/auth
 curl -X POST "http://localhost:8080/auth?expired=true"
 ```
 
+To check keys stored in the database:
+```bash
+sqlite3 totally_not_my_privateKeys.db "SELECT kid, exp FROM keys;"
+```
+
 To run the tests:
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
