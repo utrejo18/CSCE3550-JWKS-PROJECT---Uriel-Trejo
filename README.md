@@ -52,6 +52,11 @@ To check keys stored in the database:
 sqlite3 totally_not_my_privateKeys.db "SELECT kid, exp FROM keys;"
 ```
 
+To check if keys are valid or expired:
+```bash
+sqlite3 totally_not_my_privateKeys.db "SELECT kid, CASE WHEN exp > strftime('%s','now') THEN 'Valid' ELSE 'Expired' END AS status FROM keys;"
+```
+
 To run the tests:
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
