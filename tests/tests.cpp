@@ -1,4 +1,6 @@
 #include <chrono>
+#include <cstdio>
+#include <sqlite3.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -80,9 +82,9 @@ void testKeysAndJwks(const KeyManager& keys) {
            "key IDs are unique");
 
     const string jwks = keys.getJWKS();
-    expect(jwks.find(keys.getValidKey().kid) != string::npos,
+    expect(jwks.find("\"kid\":\"" + keys.getValidKey().kid + "\"") != string::npos,
            "JWKS has valid kid");
-    expect(jwks.find(keys.getExpiredKey().kid) == string::npos,
+    expect(jwks.find("\"kid\":\"" + keys.getExpiredKey().kid + "\"") == string::npos,
            "JWKS hides expired kid");
     expect(jwks.find("\"kty\":\"RSA\"") != string::npos, "JWK is RSA");
     expect(jwks.find("\"e\":\"AQAB\"") != string::npos, "JWK exponent is present");
@@ -160,6 +162,63 @@ void testRouter(const KeyManager& keys, const JwtService& jwt) {
 }
 
 }
+void testDatabaseStorage() {
+    const string file = "jwks_test_keys.db";
+    remove(file.c_str());
+    string originalKid;
+
+    {
+        KeyManager keys(file);
+        RSAKey valid = keys.getValidKey();
+        originalKid = valid.kid;
+        EVP_PKEY_free(valid.keyPair);
+        RSAKey expired = keys.getExpiredKey();
+        EVP_PKEY_free(expired.keyPair);
+    }
+
+    //Open the same database again to make sure the saved keys are reused
+    {
+        KeyManager keys(file);
+        RSAKey valid = keys.getValidKey();
+        expect(valid.kid == originalKid, "database keeps keys after reopening");
+        EVP_PKEY_free(valid.keyPair);
+
+        //Add another valid key by copying the existing stored key
+        sqlite3* database = nullptr;
+        int result = sqlite3_open(file.c_str(), &database);
+        expect(result == SQLITE_OK, "test database opens");
+        if (result == SQLITE_OK) {
+            const char* sql = "INSERT INTO keys (key, exp) "
+                              "SELECT key, exp FROM keys WHERE kid = ?";
+            sqlite3_stmt* statement = nullptr;
+            if (sqlite3_prepare_v2(database, sql, -1, &statement, nullptr) == SQLITE_OK) {
+                sqlite3_bind_int(statement, 1, stoi(originalKid));
+                expect(sqlite3_step(statement) == SQLITE_DONE, "second valid key is stored");
+            }
+            sqlite3_finalize(statement);
+            sqlite3_close(database);
+        }
+
+        //JWKS should return both unexpired keys, separated by a comma
+        string jwks = keys.getJWKS();
+        expect(jwks.find("},{") != string::npos, "JWKS includes multiple valid keys");
+        expect(keys.getJWKS(originalKid).find("},{") == string::npos,
+               "kid filter returns only one matching key");
+    }
+    remove(file.c_str());
+}
+
+//This tests that opening an invalid database location gives an error
+void testInvalidDatabase() {
+    bool caught = false;
+    try {
+        KeyManager keys("missing_test_directory/keys.db");
+    } catch (const std::exception&) {
+        caught = true;
+    }
+    expect(caught, "invalid database path is rejected");
+}
+
 
 int main() {
     testBase64Url();
@@ -168,6 +227,8 @@ int main() {
     testKeysAndJwks(keys);
     testTokens(keys, jwt);
     testRouter(keys, jwt);
+    testDatabaseStorage();
+    testInvalidDatabase();
 
     if (failures != 0) {
         cerr << failures << " test(s) failed\n";

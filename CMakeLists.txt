@@ -9,6 +9,7 @@ option(ENABLE_COVERAGE "Build with GCC/Clang coverage instrumentation" OFF)
 option(ENABLE_CLANG_TIDY "Run clang-tidy while compiling" OFF)
 
 find_package(OpenSSL REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 if(ENABLE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES clang-tidy REQUIRED)
@@ -23,7 +24,7 @@ add_library(jwks_core
 )
 
 target_include_directories(jwks_core PUBLIC include)
-target_link_libraries(jwks_core PUBLIC OpenSSL::Crypto)
+target_link_libraries(jwks_core PUBLIC OpenSSL::Crypto SQLite3::SQLite3)
 target_compile_options(jwks_core PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(jwks_server
     src/main.cpp

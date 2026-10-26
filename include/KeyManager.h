@@ -4,6 +4,7 @@
 #include <ctime> //For time_t in line 12 and 37
 #include <string>
 #include <openssl/evp.h>
+#include <sqlite3.h>
 
 //This struct keeps all the information that belongs to one RSA key
 //What EVP_PKEY does is that it stores both the public and private parts of the RSA key pair, which is used for signing and verifying JWTs
@@ -13,28 +14,25 @@ struct RSAKey {
     EVP_PKEY* keyPair;
 };
 
+//Where changes were made to extend the JWKS server to meet project 2 requirements
 class KeyManager {
 public:
-    //The constructor creates one valid key and also one expired key
-    KeyManager();
-
-    //The destructor releases the OpenSSL keys from memory
+    KeyManager(const std::string& databaseFile = "totally_not_my_privateKeys.db");
     ~KeyManager();
 
-    //Return references so that the large key data is not copied.
-    const RSAKey& getValidKey() const;
-    const RSAKey& getExpiredKey() const;
-
-    //Makes the JSON returned by /.well-known/jwks.json.
-    //Leaving wantedKid empty returns every valid key.
+    RSAKey getValidKey() const;
+    RSAKey getExpiredKey() const;
     std::string getJWKS(const std::string& wantedKid = "") const;
 
-private:
-    RSAKey validKey;
-    RSAKey expiredKey;
+    KeyManager(const KeyManager&) = delete;
+    KeyManager& operator=(const KeyManager&) = delete;
 
-    //Creates a new RSA key pair with the given ID and expiration time.
-    RSAKey createRSAKey(const std::string& kid, std::time_t expiration);
+private:
+    sqlite3* database;
+    void createTable();
+    void ensureKeys();
+    void saveKey(std::time_t expiration);
+    RSAKey readKey(bool expired) const;
     std::string keyToJWK(const RSAKey& rsaKey) const;
 
 };

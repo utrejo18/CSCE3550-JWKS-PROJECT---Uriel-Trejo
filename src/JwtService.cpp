@@ -12,18 +12,18 @@ JwtService::JwtService(const KeyManager& manager) : keyManager(manager) {
 
 string JwtService::createToken(bool useExpiredKey, time_t currentTime) const {
     //Choose which key to use for signing the JWT. Expired key used if requested
-    const RSAKey* chosenKey;
+    RSAKey chosenKey;
 
     if (useExpiredKey) {
-        chosenKey = &keyManager.getExpiredKey();
+        chosenKey = keyManager.getExpiredKey();
     } else {
-        chosenKey = &keyManager.getValidKey();
+        chosenKey = keyManager.getValidKey();
     }
     //This section creates the JWT header and also the payload as JSON strings
     string header = "{";
     header += "\"alg\":\"RS256\",";
     header += "\"typ\":\"JWT\",";
-    header += "\"kid\":\"" + chosenKey->kid + "\"";
+    header += "\"kid\":\"" + chosenKey.kid + "\"";
     header += "}";
 
     //The payload finds a fake user and includes the required times
@@ -31,17 +31,21 @@ string JwtService::createToken(bool useExpiredKey, time_t currentTime) const {
     string payload = "{";
     payload += "\"sub\":\"fake-user\",";
     payload += "\"iat\":" + to_string(currentTime) + ",";
-    payload += "\"exp\":" + to_string(chosenKey->expiresAt);
+    payload += "\"exp\":" + to_string(chosenKey.expiresAt);
     payload += "}";
 
     //A JWT has three base64url sections separated by periods.
     string encodedHeader = base64UrlEncode(header);
     string encodedPayload = base64UrlEncode(payload);
     string textToSign = encodedHeader + "." + encodedPayload;
-    string signature = signWithRSA(textToSign, chosenKey->keyPair);
+    string signature = signWithRSA(textToSign, chosenKey.keyPair);
+    try {signature = signWithRSA(textToSign, chosenKey.keyPair);} //This signs the first two JWT sections using RSA and SHA-256
+    catch (...) {EVP_PKEY_free(chosenKey.keyPair); throw;}//
+    EVP_PKEY_free(chosenKey.keyPair);
     return textToSign + "." + signature;
 }
-//
+
+//This signs the JWT using the RSA private key and returns the signature in base64url format
 string JwtService::signWithRSA(const string& text, EVP_PKEY* keyPair) const {
     //EVP_MD_CTX stores the progress of the SHA-256/RSA signing
     EVP_MD_CTX* context = EVP_MD_CTX_new();
