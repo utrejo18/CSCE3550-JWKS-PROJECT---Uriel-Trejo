@@ -1,5 +1,7 @@
-Intro:
-TO RUN WITH GRADEBOT: ./gradebot project-1 --run="./build/jwks_server" !!!!!!!!!
+# JWKS PROJECT
+## Made by Uriel Trejo uht0001
+
+#### UPDATES: For project 2, I added SQLite so the private keys are saved in a database instead of only being kept in memory.
 
 This project is a small HTTP server I made in C++. It creates RSA keys, shows
 the public key in JWKS format, and creates signed JWTs. OpenSSL is used for the
@@ -16,27 +18,29 @@ What my project does:
 - The JWT header includes the kid for the key that signed it
 - Tests are included for the main parts of the project like needed
 
-How to build:
-Open the terminal in the project folder and run:
+## How to build:
+Open the terminal in the project folder and run this FIRST:
 ```bash
 cmake -S . -B build
 cmake --build build
 ```
 
-If CMake cannot find OpenSSL, use this first:
+My project uses OpenSSL and SQLite. If CMake can't find OpenSSL, use this below:
 
 ```bash
 cmake -S . -B build -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
 ```
 
-How to run:
+## How to run:
+Input this:
 ```bash
 ./build/jwks_server
 ```
 
 The server should say that it is running on port 8080. Just leave that terminal
-open because closing it stops the server.
-You can open another terminal to run these:i 
+open because closing it stops the server. To quit: ctrl + c
+
+You can open another terminal window to run these: 
 ```bash
 curl http://localhost:8080/.well-known/jwks.json
 curl -X POST http://localhost:8080/auth
@@ -44,14 +48,13 @@ curl -X POST "http://localhost:8080/auth?expired=true"
 ```
 
 To run the tests:
-
+```bash
 cmake -S . -B build -DBUILD_TESTING=ON
-
 cmake --build build
-
 ctest --test-dir build --output-on-failure
+```
 
-To check coverage:
+## To check coverage:
 First install "gcovr" if it is not already installed:
 ```bash
 python3 -m pip install gcovr
@@ -59,13 +62,22 @@ python3 -m pip install gcovr
 
 Then run:
 ```bash
-./scripts/coverage.sh
+./coverage.sh
 ```
 
 The script runs the tests displays results
 
-- include has the header files.
-- src has the C++ source files.
-- tests/tests.cpp has the tests.
-- scripts/coverage.sh runs the coverage check.
+## Running Gradebot
+Make sure gradebot is in project folder.
+```bash
+./gradebot project-2 --run="./build/jwks_server"
+```
+## Project Files
+- include/ has the header files.
+- src/ has the C++ source files.
+- tests/tests.cpp/ has the file that holds tests.
+- coverage.sh runs the coverage check.
+- COVERAGE.md explains the coverage results
 - CMakeLists.txt tells CMake how to build everything.
+- README.md explains how to build, run, and test my project
+build/ and build-coverage/ folders are generated when building or testing.
